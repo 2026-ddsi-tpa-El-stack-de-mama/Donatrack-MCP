@@ -1,0 +1,25 @@
+spring:
+  main:
+    web-application-type: none   # stdio: no hay servidor HTTP
+    banner-mode: off             # stdout es EXCLUSIVAMENTE el canal del protocolo MCP
+  output:
+    ansi:
+      enabled: never
+  ai:
+    mcp:
+      server:
+        name: donatrack
+        version: 1.0.0
+        stdio: true              # VERIFICAR contra la doc de Spring AI 2.0.0 (ver README)
+
+app:
+  services:
+    logistica-base-url: ${LOGISTICA_BASE_URL:http://localhost:9001}
+    donaciones-base-url: ${DONACIONES_BASE_URL:http://localhost:9002}
+    incentivos-base-url: ${INCENTIVOS_BASE_URL:http://localhost:9003}
+    donadores-entidades-base-url: ${DONADORES_ENTIDADES_BASE_URL:http://localhost:9004}
+    health-path: ${HEALTH_PATH:/actuator/health}
+  http:
+    connect-timeout: ${HTTP_CONNECT_TIMEOUT:10s}
+    read-timeout: ${HTTP_READ_TIMEOUT:60s}   # Render free: cold start de 30-60s
+    max-response-chars: ${MAX_RESPONSE_CHARS:20000}   # corta listados enormes para no inundar el contexto de Claude

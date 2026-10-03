@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "donatrack": {
+      "command": "RUTA_ABSOLUTA_A_java.exe",
+      "args": ["-jar", "RUTA_ABSOLUTA_A\\donatrack-mcp\\target\\donatrack-mcp.jar"],
+      "env": {
+        "LOGISTICA_BASE_URL": "https://TU-LOGISTICA.onrender.com",
+        "DONACIONES_BASE_URL": "https://TU-DONACIONES.onrender.com",
+        "INCENTIVOS_BASE_URL": "https://TU-INCENTIVOS.onrender.com",
+        "DONADORES_ENTIDADES_BASE_URL": "https://TU-DONADORES.onrender.com"
+      }
+    }
+  }
+}
