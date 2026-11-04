@@ -14,7 +14,8 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * Único punto de salida HTTP hacia los módulos. Devuelve el body crudo (JSON o texto) sin mapear a DTOs:
+ * Único punto de salida HTTP hacia los módulos, siempre a través del API Gateway: cada path se envía como
+ * {@code <gateway>/<prefijo del servicio><path>}. Devuelve el body crudo (JSON o texto) sin mapear a DTOs:
  * el contrato lo sigue definiendo cada módulo y no hay DTOs espejo que mantener.
  *
  * Usa el HttpClient del JDK (no HttpURLConnection) porque este último NO soporta el verbo PATCH.
@@ -27,15 +28,20 @@ public class DownstreamClient {
     private static final String GET_VACIO =
             "{\"resultado\":null,\"nota\":\"El módulo respondió 200 sin cuerpo: probablemente el recurso no existe.\"}";
 
-    private final Map<Servicio, RestClient> clients = new EnumMap<>(Servicio.class);
+    private final RestClient gateway;
+    private final Map<Servicio, String> prefijos = new EnumMap<>(Servicio.class);
     private final int maxResponseChars;
 
     public DownstreamClient(McpServerProperties props) {
-        var s = props.services();
-        clients.put(Servicio.LOGISTICA, build(s.logisticaBaseUrl(), props));
-        clients.put(Servicio.DONACIONES, build(s.donacionesBaseUrl(), props));
-        clients.put(Servicio.INCENTIVOS, build(s.incentivosBaseUrl(), props));
-        clients.put(Servicio.DONADORES_ENTIDADES, build(s.donadoresEntidadesBaseUrl(), props));
+        var g = props.gateway();
+        var p = g.prefijos();
+        this.gateway = build(sinBarraFinal(g.baseUrl()), props);
+        prefijos.put(Servicio.GATEWAY, "");
+        prefijos.put(Servicio.LOGISTICA, normalizar(p.logistica()));
+        prefijos.put(Servicio.DONACIONES, normalizar(p.donaciones()));
+        prefijos.put(Servicio.INCENTIVOS, normalizar(p.incentivos()));
+        prefijos.put(Servicio.DONADORES_ENTIDADES, normalizar(p.donadoresEntidades()));
+        prefijos.put(Servicio.CONSULTAS, normalizar(p.consultas()));
         this.maxResponseChars = props.http().maxResponseChars();
     }
 
@@ -66,7 +72,7 @@ public class DownstreamClient {
 
     private String call(Servicio servicio, HttpMethod metodo, String path, Object body, Object[] uriVars) {
         try {
-            RestClient.RequestBodySpec spec = clients.get(servicio).method(metodo).uri(path, uriVars);
+            RestClient.RequestBodySpec spec = gateway.method(metodo).uri(prefijos.get(servicio) + path, uriVars);
             if (body != null) {
                 spec = spec.body(body);
             }
@@ -102,6 +108,16 @@ public class DownstreamClient {
         }
         return new DownstreamException(servicio, status,
                 servicio.nombre() + " respondió HTTP " + status + (body.isEmpty() ? "" : ": " + body), null);
+    }
+
+    /** "" o "/x" (con barra inicial y sin barra final), para concatenar con paths que empiezan con "/". */
+    private static String normalizar(String prefijo) {
+        String p = prefijo == null ? "" : sinBarraFinal(prefijo.trim());
+        return p.isEmpty() || p.startsWith("/") ? p : "/" + p;
+    }
+
+    private static String sinBarraFinal(String s) {
+        return s.replaceAll("/+$", "");
     }
 
     private static RestClient build(String baseUrl, McpServerProperties props) {

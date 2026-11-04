@@ -24,9 +24,10 @@ public class SistemaTools {
     }
 
     @McpTool(name = "estado_servicios",
-            description = "Verifica si los cuatro módulos de DonaTrack (Logística, Donaciones, Incentivos, "
-                    + "Donadores y Entidades) responden. Sirve también para despertarlos si están dormidos "
-                    + "(cold start). Usar ante cualquier error de conexión de otra tool.")
+            description = "Verifica si responden el API Gateway, los cuatro módulos de DonaTrack (Logística, "
+                    + "Donaciones, Incentivos, Donadores y Entidades) y el Servicio de Consultas, todos a través "
+                    + "del gateway. Si falla el gateway, fallan todos. Sirve también para despertarlos si están "
+                    + "dormidos (cold start). Usar ante cualquier error de conexión de otra tool.")
     public Map<String, Object> estadoServicios() {
         List<CompletableFuture<Map.Entry<String, Object>>> futuros = Arrays.stream(Servicio.values())
                 .map(s -> CompletableFuture.supplyAsync(() -> ping(s)))
@@ -43,7 +44,7 @@ public class SistemaTools {
     private Map.Entry<String, Object> ping(Servicio servicio) {
         long inicio = System.currentTimeMillis();
         try {
-            downstream.get(servicio, props.services().healthPath());
+            downstream.get(servicio, props.gateway().healthPath());
             return Map.entry(servicio.nombre(), Map.of("estado", "OK", "ms", System.currentTimeMillis() - inicio));
         } catch (RuntimeException e) {
             return Map.entry(servicio.nombre(), Map.of("estado", "ERROR", "detalle", String.valueOf(e.getMessage())));

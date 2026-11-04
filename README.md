@@ -1,7 +1,8 @@
 # donatrack-mcp
 
 MCP server **local (stdio)** para operar DonaTrack desde Claude Desktop. Claude Desktop lanza el proceso
-(`java -jar`) y habla JSON-RPC por stdin/stdout; el servidor delega por HTTP en los cuatro módulos.
+(`java -jar`) y habla JSON-RPC por stdin/stdout; el servidor delega por HTTP en los cuatro módulos y en el
+Servicio de Consultas, **siempre a través del API Gateway**.
 No contiene reglas de negocio: cada tool es un adaptador fino y los errores de los módulos se propagan tal cual.
 
 ## Build
@@ -12,9 +13,26 @@ No contiene reglas de negocio: cada tool es un adaptador fino y los errores de l
 Debe listar 44 tools (una por intención de negocio, ver abajo). Si el Inspector no conecta, el problema es del
 server (casi seguro stdout contaminado o la propiedad stdio), no de Claude Desktop.
 
+## API Gateway
+El MCP solo conoce una URL: `GATEWAY_BASE_URL`. Cada request sale como `<gateway>/<prefijo><path del módulo>`
+y el gateway tiene que quitar el prefijo antes de reenviar (en Spring Cloud Gateway: `StripPrefix=1`).
+El prefijo es obligatorio porque hay paths que se repiten entre módulos (por ejemplo `/donadores/...` existe
+en Donadores y Entidades y en Incentivos).
+
+| Servicio | Prefijo por defecto | Variable para cambiarlo |
+|---|---|---|
+| Logística | `/logistica` | `PREFIJO_LOGISTICA` |
+| Donaciones | `/donaciones` | `PREFIJO_DONACIONES` |
+| Incentivos | `/incentivos` | `PREFIJO_INCENTIVOS` |
+| Donadores y Entidades | `/donadores-entidades` | `PREFIJO_DONADORES_ENTIDADES` |
+| Servicio de Consultas | `/consultas` | `PREFIJO_CONSULTAS` |
+
+`estado_servicios` pide `HEALTH_PATH` (por defecto `/actuator/health`) al gateway sin prefijo y a cada servicio
+con su prefijo, así que el gateway también tiene que reenviar `/<prefijo>/actuator/health`.
+
 ## Claude Desktop
 1. Copiar `claude_desktop_config.example.json` dentro de `%APPDATA%\Claude\claude_desktop_config.json`
-   (fusionando con `mcpServers` si ya existe) y completar rutas y URLs.
+   (fusionando con `mcpServers` si ya existe) y completar las rutas y `GATEWAY_BASE_URL`.
 2. Usar ruta ABSOLUTA a `java.exe`: Claude Desktop no hereda el PATH de tu terminal.
 3. Cerrar Claude Desktop por completo (bandeja / Administrador de tareas) y abrirlo de nuevo.
 4. Logs: `%APPDATA%\Claude\logs\mcp-server-donatrack.log` (acá aparece todo lo que sale por stderr).

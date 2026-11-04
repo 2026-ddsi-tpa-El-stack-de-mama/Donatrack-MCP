@@ -13,12 +13,15 @@ spring:
         stdio: true              # VERIFICAR contra la doc de Spring AI 2.0.0 (ver README)
 
 app:
-  services:
-    logistica-base-url: ${LOGISTICA_BASE_URL:http://localhost:9001}
-    donaciones-base-url: ${DONACIONES_BASE_URL:http://localhost:9002}
-    incentivos-base-url: ${INCENTIVOS_BASE_URL:http://localhost:9003}
-    donadores-entidades-base-url: ${DONADORES_ENTIDADES_BASE_URL:http://localhost:9004}
+  gateway:
+    base-url: ${GATEWAY_BASE_URL:http://localhost:8080}
     health-path: ${HEALTH_PATH:/actuator/health}
+    prefijos:                    # deben coincidir con las rutas del gateway (que quita el prefijo antes de reenviar)
+      logistica: ${PREFIJO_LOGISTICA:/logistica}
+      donaciones: ${PREFIJO_DONACIONES:/donaciones}
+      incentivos: ${PREFIJO_INCENTIVOS:/incentivos}
+      donadores-entidades: ${PREFIJO_DONADORES_ENTIDADES:/donadores-entidades}
+      consultas: ${PREFIJO_CONSULTAS:/consultas}
   http:
     connect-timeout: ${HTTP_CONNECT_TIMEOUT:10s}
     read-timeout: ${HTTP_READ_TIMEOUT:60s}   # Render free: cold start de 30-60s
