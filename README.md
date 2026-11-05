@@ -10,12 +10,13 @@ No contiene reglas de negocio: cada tool es un adaptador fino y los errores de l
 
 ## Verificar ANTES de tocar Claude Desktop
     npx @modelcontextprotocol/inspector java -jar target/donatrack-mcp.jar
-Debe listar 44 tools (una por intención de negocio, ver abajo). Si el Inspector no conecta, el problema es del
+Debe listar 57 tools (una por intención de negocio, ver abajo). Si el Inspector no conecta, el problema es del
 server (casi seguro stdout contaminado o la propiedad stdio), no de Claude Desktop.
 
 ## API Gateway
 El MCP solo conoce una URL: `GATEWAY_BASE_URL`. Cada request sale como `<gateway>/<prefijo><path del módulo>`
 y el gateway tiene que quitar el prefijo antes de reenviar (en Spring Cloud Gateway: `StripPrefix=1`).
+Excepción: la ruta de consultas no quita el prefijo (ver "Contrato con el Servicio de Consultas").
 El prefijo es obligatorio porque hay paths que se repiten entre módulos (por ejemplo `/donadores/...` existe
 en Donadores y Entidades y en Incentivos).
 
@@ -42,23 +43,44 @@ con su prefijo, así que el gateway también tiene que reenviar `/<prefijo>/actu
 - `description` = el prompt de la tool: qué hace, qué ids necesita y de qué otra tool salen.
 - Sin validaciones de dominio: si el módulo rechaza, el mensaje de `DownstreamException` llega al modelo.
 - Jamás `System.out`: stdout es el protocolo.
+- Las tools corren de a una (`McpServerConfig`): el transporte stdio no admite dos respuestas simultáneas y, sin esto, dos tools en paralelo tiran abajo el proceso. Una tool lenta demora a las siguientes.
 
-## Catálogo de tools (44)
+## Catálogo de tools (57)
 | Clase | Tools |
 |---|---|
 | `FlujosTools` (los 6 flujos de la consigna) | realizar_donacion, reportar_entrega_paquete, registrar_queja_donacion, procesar_donador, registrar_necesidad, obtener_estadisticas_donador |
-| `DonacionesTools` | consultar_donaciones, buscar_donaciones_de_donador_desde, cambiar_estado_donacion, consultar_historial_donaciones, consultar_productos, crear_producto, consultar_categorias, crear_categoria, consultar_identificadores, crear_identificador |
-| `LogisticaTools` | consultar_depositos, crear_deposito, consultar_asignaciones, consultar_historial_asignaciones, consultar_paquete, consultar_stock |
-| `IncentivosTools` | consultar/crear/modificar_insignia(s), asignar_insignia_a_donador, consultar/crear/modificar_mision(es), asignar_mision_a_donador |
+| `DonacionesTools` | consultar_donaciones, buscar_donaciones_de_donador_desde, cambiar_estado_donacion, consultar_historial_donaciones, consultar_productos, crear_producto, consultar_categorias, crear_categoria, consultar_identificadores, crear_identificador, modificar_producto, eliminar_donacion, eliminar_producto, eliminar_categoria, eliminar_identificador |
+| `LogisticaTools` | consultar_depositos, crear_deposito, consultar_asignaciones, consultar_historial_asignaciones, consultar_paquete, consultar_stock, eliminar_deposito |
+| `IncentivosTools` | consultar/crear/modificar_insignia(s), asignar_insignia_a_donador, consultar/crear/modificar_mision(es), asignar_mision_a_donador, eliminar_insignia, eliminar_mision |
 | `DonadoresEntidadesTools` | consultar_donadores, crear_donador, cambiar_estado_donador, consultar_si_puede_donar, consultar_historial_donador, consultar/crear/modificar_entidad(es), consultar_necesidades, consultar_necesidades_insatisfechas, satisfacer_necesidad, modificar_necesidad, eliminar_necesidad |
-| `SistemaTools` | estado_servicios |
+| `ConsultasTools` (modelo de lectura) | ficha_integral_donador, necesidades_urgentes_sin_cubrir, estado_depositos, calidad_donaciones |
+| `SistemaTools` | estado_servicios, resumen_sistema |
+
+## Contrato con el Servicio de Consultas
+PROPUESTA, pendiente de confirmar con el Servicio de Consultas. Si cambia, se ajusta en `ConsultasTools`.
+Sigue la base que ya usa el servicio (`/consultas/fichaintegraldonador`): la URL final es `/consultas` + el path de la
+tabla, y **esta ruta del gateway NO debe quitar el prefijo**. Todos los parámetros de query son opcionales.
+
+| Tool | Endpoint | Query |
+|---|---|---|
+| `ficha_integral_donador` | `GET /fichaintegraldonador/{id}` | |
+| `necesidades_urgentes_sin_cubrir` | `GET /necesidadesurgentes` | `urgenciaMinima`, `tipo`, `categoriaId`, `subcategoriaId` |
+| `estado_depositos` | `GET /estadodepositos` | `depositoId`, `desde`, `hasta` (`yyyy-MM-dd`) |
+| `calidad_donaciones` | `GET /calidaddonacion` | `topDonadores` |
 
 ## Endpoints deliberadamente NO expuestos
-- `DELETE /donaciones` (borra todas) y `POST /admin/reset`: un typo de lenguaje natural no debe poder vaciar la base. Usar Postman.
+- `DELETE /donaciones` sin id (borra todas) y `POST /admin/reset`: un typo de lenguaje natural no debe poder vaciar la base. Usar Postman.
 - `POST /depositos/{id}/donacion`, `POST /asignaciones`, `POST /asignacionesDirecta`, `POST /stock/{id}`: pasos internos del flujo de donación; exponerlos permite saltearse la orquestación de Donaciones.
 - `PATCH /donadores/{id}/categoria` (ambos módulos): la categoría es consecuencia de `procesar_donador`.
 - `POST /donadores/{id}/quejas`: duplicaría semánticamente a `registrar_queja_donacion`; el modelo elegiría mal.
-- Bajas de donaciones, productos, categorías, insignias, misiones y depósitos; `PUT /productos/{id}` (ver bug en el controller).
+
+## Bajas y modificaciones que no existen en los módulos
+No hay tool porque no hay endpoint: `PUT /depositos/{id}`, `PUT /donadores/{id}`, `DELETE /donadores/{id}`,
+`DELETE /entidades/{id}`, `PUT /categorias/{id}`, `PUT /identificadores/{id}`. La baja de un donador hoy se resuelve con
+`cambiar_estado_donador`.
+
+## Alarmas
+Monitores de Datadog en [`alarmas/`](alarmas/README.md). No forman parte del proceso del MCP.
 
 ## Convenciones de parámetros
 - Todos los parámetros son escalares tipados con los valores de los enums en la `description` (EstadoDonacionEnum, EstadoDonadorEnum, TipoNecesidadMaterialEnum, TipoAlgoritmoEnum, CategoriaDonadorEnum, TipoMisionEnum, TipoIdentificadorEnum). Si un enum cambia en un módulo, actualizar la descripción de la tool correspondiente.

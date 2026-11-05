@@ -49,6 +49,11 @@ public class DownstreamClient {
         return call(servicio, HttpMethod.GET, path, null, uriVars);
     }
 
+    /** GET sin truncar, para procesar la respuesta dentro del MCP. No devolverla entera al modelo. */
+    public String getCompleto(Servicio servicio, String path, Object... uriVars) {
+        return sinTruncar(servicio, HttpMethod.GET, path, null, uriVars);
+    }
+
     /** POST sin cuerpo (acciones: procesar, asignar...). */
     public String accion(Servicio servicio, String path, Object... uriVars) {
         return call(servicio, HttpMethod.POST, path, null, uriVars);
@@ -71,6 +76,10 @@ public class DownstreamClient {
     }
 
     private String call(Servicio servicio, HttpMethod metodo, String path, Object body, Object[] uriVars) {
+        return limitar(sinTruncar(servicio, metodo, path, body, uriVars));
+    }
+
+    private String sinTruncar(Servicio servicio, HttpMethod metodo, String path, Object body, Object[] uriVars) {
         try {
             RestClient.RequestBodySpec spec = gateway.method(metodo).uri(prefijos.get(servicio) + path, uriVars);
             if (body != null) {
@@ -84,7 +93,7 @@ public class DownstreamClient {
             if (respuesta == null || respuesta.isBlank()) {
                 return metodo == HttpMethod.GET ? GET_VACIO : OK_VACIO;
             }
-            return limitar(respuesta);
+            return respuesta;
         } catch (ResourceAccessException e) {
             throw new DownstreamException(servicio, null,
                     servicio.nombre() + " no responde (timeout o conexión rechazada). "

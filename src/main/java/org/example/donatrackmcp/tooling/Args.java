@@ -2,6 +2,7 @@ package org.example.donatrackmcp.tooling;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /** Helpers de armado de argumentos. Sin lógica de dominio. */
 final class Args {
@@ -22,5 +23,16 @@ final class Args {
             }
         }
         return m;
+    }
+
+    /**
+     * Agrega al path un placeholder por cada parámetro presente (la URI los codifica).
+     * Los valores se pasan como uriVars, en el mismo orden: {@code params.values().toArray()}.
+     */
+    static String query(String path, Map<String, Object> params) {
+        if (params.isEmpty()) {
+            return path;
+        }
+        return path + params.keySet().stream().map(k -> k + "={" + k + "}").collect(Collectors.joining("&", "?", ""));
     }
 }

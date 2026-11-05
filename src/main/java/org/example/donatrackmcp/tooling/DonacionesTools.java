@@ -94,4 +94,45 @@ public class DonacionesTools {
             String descripcion) {
         return d.post(S, "/identificadores", Args.body("tipo", tipo, "descripcion", descripcion));
     }
+
+    @McpTool(name = "eliminar_donacion",
+            description = "DESTRUCTIVA: elimina UNA donación; no deshace su paquete ni su asignación en Logística. "
+                    + "Confirmar con el usuario.")
+    public String eliminarDonacion(
+            @McpToolParam(description = "Id de la donación", required = true) String id) {
+        return d.delete(S, "/donaciones/{id}", id);
+    }
+
+    @McpTool(name = "modificar_producto",
+            description = "Reemplaza los datos de un producto: enviar TODOS los campos, no solo los que cambian "
+                    + "(leerlos antes con consultar_productos). La categoría y el identificador deben existir.")
+    public String modificarProducto(
+            @McpToolParam(description = "Id del producto", required = true) String id,
+            @McpToolParam(description = "Nombre", required = true) String nombre,
+            @McpToolParam(description = "Descripción", required = false) String descripcion,
+            @McpToolParam(description = "Id de la categoría", required = true) String categoriaId,
+            @McpToolParam(description = "Id del identificador (QR / código de barras)", required = true)
+            String identificadorId) {
+        return d.put(S, "/productos/{id}", Args.body("id", id, "nombre", nombre, "descripcion", descripcion,
+                "categoriaID", categoriaId, "identificadorID", identificadorId), id);
+    }
+
+    @McpTool(name = "eliminar_producto", description = "DESTRUCTIVA: elimina un producto. Confirmar con el usuario.")
+    public String eliminarProducto(
+            @McpToolParam(description = "Id del producto", required = true) String id) {
+        return d.delete(S, "/productos/{id}", id);
+    }
+
+    @McpTool(name = "eliminar_categoria", description = "DESTRUCTIVA: elimina una categoría. Confirmar con el usuario.")
+    public String eliminarCategoria(
+            @McpToolParam(description = "Id de la categoría", required = true) String id) {
+        return d.delete(S, "/categorias/{id}", id);
+    }
+
+    @McpTool(name = "eliminar_identificador",
+            description = "DESTRUCTIVA: elimina un identificador de producto. Confirmar con el usuario.")
+    public String eliminarIdentificador(
+            @McpToolParam(description = "Id del identificador", required = true) String id) {
+        return d.delete(S, "/identificadores/{id}", id);
+    }
 }

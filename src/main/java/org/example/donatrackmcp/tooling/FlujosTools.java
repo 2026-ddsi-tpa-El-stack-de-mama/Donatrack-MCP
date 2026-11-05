@@ -23,7 +23,11 @@ public class FlujosTools {
     @McpTool(name = "realizar_donacion",
             description = "FLUJO 1 - Registra una donación nueva en el módulo de Donaciones, que aplica todas las "
                     + "reglas de negocio (el estado inicial lo define el módulo). Ids: donador con "
-                    + "consultar_donadores, producto con consultar_productos, depósito con consultar_depositos.")
+                    + "consultar_donadores, producto con consultar_productos, depósito con consultar_depositos. "
+                    + "La respuesta NO incluye la asignación: Logística la resuelve por una cola, unos segundos "
+                    + "después. Para saber a qué entidad se asignó: consultar_paquete sin id (buscar el donacionID), "
+                    + "consultar_asignaciones sin id (buscar el paqueteID), consultar_necesidades con el necesidadID "
+                    + "y consultar_entidades con el entidadID.")
     public String realizarDonacion(
             @McpToolParam(description = "Id del donador", required = true) String donadorId,
             @McpToolParam(description = "Id del producto donado", required = true) String productoId,

@@ -93,4 +93,16 @@ public class IncentivosTools {
             @McpToolParam(description = "Id del donador", required = true) String donadorId) {
         return d.accion(S, "/misiones/{mision}/donadores/{donador}", misionId, donadorId);
     }
+
+    @McpTool(name = "eliminar_insignia", description = "DESTRUCTIVA: elimina una insignia. Confirmar con el usuario.")
+    public String eliminarInsignia(
+            @McpToolParam(description = "Id de la insignia", required = true) String id) {
+        return d.delete(S, "/insignias/{id}", id);
+    }
+
+    @McpTool(name = "eliminar_mision", description = "DESTRUCTIVA: elimina una misión. Confirmar con el usuario.")
+    public String eliminarMision(
+            @McpToolParam(description = "Id de la misión", required = true) String id) {
+        return d.delete(S, "/misiones/{id}", id);
+    }
 }

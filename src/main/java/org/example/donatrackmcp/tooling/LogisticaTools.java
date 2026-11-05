@@ -50,15 +50,23 @@ public class LogisticaTools {
         return d.get(S, "/asignacionesHistorial");
     }
 
-    @McpTool(name = "consultar_paquete", description = "Devuelve un paquete por id.")
+    @McpTool(name = "consultar_paquete",
+            description = "Sin id: lista los paquetes (id, donacionID, producto, cantidad). Con id: devuelve ese "
+                    + "paquete. Para saber el paquete de una donación, buscar su donacionID en el listado.")
     public String consultarPaquete(
-            @McpToolParam(description = "Id del paquete", required = true) String id) {
-        return d.get(S, "/paquetes/{id}", id);
+            @McpToolParam(description = "Id del paquete (opcional)", required = false) String id) {
+        return Args.vacio(id) ? d.get(S, "/paquetes") : d.get(S, "/paquetes/{id}", id);
     }
 
     @McpTool(name = "consultar_stock", description = "Stock disponible de un producto.")
     public String consultarStock(
             @McpToolParam(description = "Id del producto", required = true) String productoId) {
         return d.get(S, "/stock/{id}", productoId);
+    }
+
+    @McpTool(name = "eliminar_deposito", description = "DESTRUCTIVA: elimina un depósito. Confirmar con el usuario.")
+    public String eliminarDeposito(
+            @McpToolParam(description = "Id del depósito", required = true) String id) {
+        return d.delete(S, "/depositos/{id}", id);
     }
 }
