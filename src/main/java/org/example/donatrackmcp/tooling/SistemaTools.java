@@ -96,10 +96,22 @@ public class SistemaTools {
         }
     }
 
+    /** El gateway no reenvía el actuator de los servicios: a cada uno se lo prueba con un GET real y liviano. */
+    private String sonda(Servicio servicio) {
+        return switch (servicio) {
+            case GATEWAY -> props.gateway().healthPath();
+            case LOGISTICA -> "/depositos";
+            case DONACIONES -> "/categorias";
+            case INCENTIVOS -> "/insignias";
+            case DONADORES_ENTIDADES -> "/entidades";
+            case CONSULTAS -> "/estadoDepositos";
+        };
+    }
+
     private Map.Entry<String, Object> ping(Servicio servicio) {
         long inicio = System.currentTimeMillis();
         try {
-            downstream.get(servicio, props.gateway().healthPath());
+            downstream.get(servicio, sonda(servicio));
             return Map.entry(servicio.nombre(), Map.of("estado", "OK", "ms", System.currentTimeMillis() - inicio));
         } catch (RuntimeException e) {
             return Map.entry(servicio.nombre(), Map.of("estado", "ERROR", "detalle", String.valueOf(e.getMessage())));

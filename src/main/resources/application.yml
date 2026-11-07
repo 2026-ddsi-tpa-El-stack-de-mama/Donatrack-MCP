@@ -16,11 +16,11 @@ app:
   gateway:
     base-url: ${GATEWAY_BASE_URL:http://localhost:8080}
     health-path: ${HEALTH_PATH:/actuator/health}
-    prefijos:                    # deben coincidir con las rutas del gateway (que quita el prefijo antes de reenviar)
+    prefijos:                    # deben coincidir con las rutas del gateway
       logistica: ${PREFIJO_LOGISTICA:/logistica}
       donaciones: ${PREFIJO_DONACIONES:/donaciones}
       incentivos: ${PREFIJO_INCENTIVOS:/incentivos}
-      donadores-entidades: ${PREFIJO_DONADORES_ENTIDADES:/donadores-entidades}
+      donadores-entidades: ${PREFIJO_DONADORES_ENTIDADES:/donadoresyentidades}
       consultas: ${PREFIJO_CONSULTAS:/consultas}
   http:
     connect-timeout: ${HTTP_CONNECT_TIMEOUT:10s}

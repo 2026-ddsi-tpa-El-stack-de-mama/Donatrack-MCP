@@ -14,9 +14,8 @@ Debe listar 57 tools (una por intención de negocio, ver abajo). Si el Inspector
 server (casi seguro stdout contaminado o la propiedad stdio), no de Claude Desktop.
 
 ## API Gateway
-El MCP solo conoce una URL: `GATEWAY_BASE_URL`. Cada request sale como `<gateway>/<prefijo><path del módulo>`
-y el gateway tiene que quitar el prefijo antes de reenviar (en Spring Cloud Gateway: `StripPrefix=1`).
-Excepción: la ruta de consultas no quita el prefijo (ver "Contrato con el Servicio de Consultas").
+El MCP solo conoce una URL: `GATEWAY_BASE_URL`. Cada request sale como `<gateway>/<prefijo><path del módulo>`.
+El gateway (`API-Gateway`) tiene un método por endpoint, así que una tool nueva necesita su ruta allá.
 El prefijo es obligatorio porque hay paths que se repiten entre módulos (por ejemplo `/donadores/...` existe
 en Donadores y Entidades y en Incentivos).
 
@@ -25,11 +24,11 @@ en Donadores y Entidades y en Incentivos).
 | Logística | `/logistica` | `PREFIJO_LOGISTICA` |
 | Donaciones | `/donaciones` | `PREFIJO_DONACIONES` |
 | Incentivos | `/incentivos` | `PREFIJO_INCENTIVOS` |
-| Donadores y Entidades | `/donadores-entidades` | `PREFIJO_DONADORES_ENTIDADES` |
+| Donadores y Entidades | `/donadoresyentidades` | `PREFIJO_DONADORES_ENTIDADES` |
 | Servicio de Consultas | `/consultas` | `PREFIJO_CONSULTAS` |
 
-`estado_servicios` pide `HEALTH_PATH` (por defecto `/actuator/health`) al gateway sin prefijo y a cada servicio
-con su prefijo, así que el gateway también tiene que reenviar `/<prefijo>/actuator/health`.
+`estado_servicios` pide `HEALTH_PATH` (por defecto `/actuator/health`) solo al gateway. A cada servicio lo prueba con
+un GET real (`SistemaTools.sonda`), porque el gateway no reenvía su actuator.
 
 ## Claude Desktop
 1. Copiar `claude_desktop_config.example.json` dentro de `%APPDATA%\Claude\claude_desktop_config.json`
@@ -57,16 +56,15 @@ con su prefijo, así que el gateway también tiene que reenviar `/<prefijo>/actu
 | `SistemaTools` | estado_servicios, resumen_sistema |
 
 ## Contrato con el Servicio de Consultas
-PROPUESTA, pendiente de confirmar con el Servicio de Consultas. Si cambia, se ajusta en `ConsultasTools`.
-Sigue la base que ya usa el servicio (`/consultas/fichaintegraldonador`): la URL final es `/consultas` + el path de la
-tabla, y **esta ruta del gateway NO debe quitar el prefijo**. Todos los parámetros de query son opcionales.
+La URL final es `/consultas` + el path de la tabla. Los parámetros son opcionales. Si cambia, se ajusta en `ConsultasTools`.
+Las consultas 2 y 4 son una PROPUESTA: todavía no existen ni en el Servicio de Consultas ni en el gateway.
 
 | Tool | Endpoint | Query |
 |---|---|---|
-| `ficha_integral_donador` | `GET /fichaintegraldonador/{id}` | |
-| `necesidades_urgentes_sin_cubrir` | `GET /necesidadesurgentes` | `urgenciaMinima`, `tipo`, `categoriaId`, `subcategoriaId` |
-| `estado_depositos` | `GET /estadodepositos` | `depositoId`, `desde`, `hasta` (`yyyy-MM-dd`) |
-| `calidad_donaciones` | `GET /calidaddonacion` | `topDonadores` |
+| `ficha_integral_donador` | `GET /fichaIntegralDonador/{id}` | |
+| `necesidades_urgentes_sin_cubrir` | `GET /necesidadesUrgentes` | `urgenciaMinima`, `tipo`, `categoriaId`, `subcategoriaId` |
+| `estado_depositos` | `GET /estadoDepositos` o `GET /estadoDepositos/{id}` | |
+| `calidad_donaciones` | `GET /calidadDonacion` | `topDonadores` |
 
 ## Endpoints deliberadamente NO expuestos
 - `DELETE /donaciones` sin id (borra todas) y `POST /admin/reset`: un typo de lenguaje natural no debe poder vaciar la base. Usar Postman.

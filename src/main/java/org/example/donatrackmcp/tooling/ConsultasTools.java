@@ -29,7 +29,7 @@ public class ConsultasTools {
                     + "Si el usuario no dio el id, obtenerlo con consultar_donadores." + CONSISTENCIA)
     public String fichaIntegralDonador(
             @McpToolParam(description = "Id del donador", required = true) String donadorId) {
-        return d.get(S, "/fichaintegraldonador/{id}", donadorId);
+        return d.get(S, "/fichaIntegralDonador/{id}", donadorId);
     }
 
     @McpTool(name = "necesidades_urgentes_sin_cubrir",
@@ -45,22 +45,17 @@ public class ConsultasTools {
             String subcategoriaId) {
         var q = Args.body("urgenciaMinima", urgenciaMinima, "tipo", tipo,
                 "categoriaId", categoriaId, "subcategoriaId", subcategoriaId);
-        return d.get(S, Args.query("/necesidadesurgentes", q), q.values().toArray());
+        return d.get(S, Args.query("/necesidadesUrgentes", q), q.values().toArray());
     }
 
     @McpTool(name = "estado_depositos",
             description = "CONSULTA 3 - Para todos los depósitos o uno en particular: ocupación (stock sobre "
-                    + "capacidad), algoritmo de matchmaking, asignaciones por estado, tiempo promedio entre ingreso "
-                    + "y entrega de una donación dentro del rango de fechas y entidades distintas atendidas."
+                    + "capacidad), algoritmo de matchmaking, asignaciones, tiempo promedio entre ingreso y entrega de "
+                    + "una donación y entidades atendidas."
                     + CONSISTENCIA)
     public String estadoDepositos(
-            @McpToolParam(description = "Id del depósito; omitir para todos", required = false) String depositoId,
-            @McpToolParam(description = "Inicio del rango en formato ISO yyyy-MM-dd (opcional)", required = false)
-            String desde,
-            @McpToolParam(description = "Fin del rango en formato ISO yyyy-MM-dd (opcional)", required = false)
-            String hasta) {
-        var q = Args.body("depositoId", depositoId, "desde", desde, "hasta", hasta);
-        return d.get(S, Args.query("/estadodepositos", q), q.values().toArray());
+            @McpToolParam(description = "Id del depósito; omitir para todos", required = false) String depositoId) {
+        return Args.vacio(depositoId) ? d.get(S, "/estadoDepositos") : d.get(S, "/estadoDepositos/{id}", depositoId);
     }
 
     @McpTool(name = "calidad_donaciones",
@@ -70,6 +65,6 @@ public class ConsultasTools {
             @McpToolParam(description = "Cantidad de donadores a listar (entero, opcional)", required = false)
             Integer topDonadores) {
         var q = Args.body("topDonadores", topDonadores);
-        return d.get(S, Args.query("/calidaddonacion", q), q.values().toArray());
+        return d.get(S, Args.query("/calidadDonacion", q), q.values().toArray());
     }
 }
